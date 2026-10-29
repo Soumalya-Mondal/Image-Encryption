@@ -1,0 +1,9 @@
+[project]
+name = "image-encryption"
+version = "0.1.0"
+description = "Password-based JPG image encryption and decryption using Argon2id and Fernet."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "cryptography>=50.0.2",
+]
