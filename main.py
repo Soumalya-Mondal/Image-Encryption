@@ -38,10 +38,6 @@ if __name__ == '__main__':
             input_images_folder_path = Path(parent_folder_path) / 'input'
             output_images_folder_path = Path(parent_folder_path) / 'output'
             output_images_folder_path.mkdir(parents = True, exist_ok = True)
-            tmp_folder_path = Path(parent_folder_path) / 'tmp'
-            tmp_folder_path.mkdir(parents = True, exist_ok = True)
-            encrypted_images_folder_path = Path(tmp_folder_path) / 'EncryptedImages'
-            encrypted_images_folder_path.mkdir(parents = True, exist_ok = True)
         except Exception as error:
             print(f'ERROR - [Main:S4] - {str(error)}')
             sys.exit(1)
@@ -60,7 +56,7 @@ if __name__ == '__main__':
 
         # Calling "image_encode" Function:S6
         try:
-            image_encode_backend_response = image_encode(input_images_folder_path = str(input_images_folder_path))
+            image_encode_backend_response = image_encode()
             if image_encode_backend_response['status'] == 'ERROR':
                 print(f'ERROR - [Main:S6] - {image_encode_backend_response["message"]}')
                 sys.exit(1)
@@ -76,7 +72,7 @@ if __name__ == '__main__':
         # Encrypt Encoded Text Files:S7
         try:
             encryption_password = getpass.getpass('\n-> Enter Encryption Password: ')
-            image_encrypt_backend_response = image_encrypt(encoded_images_folder_path = str(input_images_folder_path), encrypted_images_folder_path = str(encrypted_images_folder_path), encryption_password = encryption_password)
+            image_encrypt_backend_response = image_encrypt(output_images_folder_path = str(output_images_folder_path), encryption_password = encryption_password)
             if image_encrypt_backend_response['status'] == 'ERROR':
                 print(f'ERROR - [Main:S7] - {image_encrypt_backend_response["message"]}')
                 sys.exit(1)
@@ -84,23 +80,6 @@ if __name__ == '__main__':
                 print(f'-> {image_encrypt_backend_response["message"]}')
         except Exception as error:
             print(f'ERROR - [Main:S7] - {str(error)}')
-            sys.exit(1)
-
-        # Move Encrypted Files To "output" Folder:S8
-        try:
-            for encrypted_file_path in sorted(encrypted_images_folder_path.iterdir()):
-                if encrypted_file_path.is_file():
-                    shutil.move(str(encrypted_file_path), str(output_images_folder_path))
-            print('\n-> Encrypted Files Moved To "output" Folder Successfully')
-        except Exception as error:
-            print(f'ERROR - [Main:S8] - {str(error)}')
-            sys.exit(1)
-
-        # Delete Processed "input" Folder:S9
-        try:
-            shutil.rmtree(input_images_folder_path)
-        except Exception as error:
-            print(f'ERROR - [Main:S9] - {str(error)}')
             sys.exit(1)
 
     elif user_choice == 'b':
