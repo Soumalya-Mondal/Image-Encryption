@@ -115,10 +115,7 @@ if __name__ == '__main__':
         # Delete Processed Input Files And Working Folders:S10
         try:
             shutil.rmtree(input_images_folder_path)
-            shutil.rmtree(encoded_images_folder_path)
-            shutil.rmtree(encrypted_images_folder_path)
-            if not any(tmp_folder_path.iterdir()):
-                tmp_folder_path.rmdir()
+            shutil.rmtree(tmp_folder_path)
         except Exception as error:
             print(f'ERROR - [Main:S10] - {str(error)}')
             sys.exit(1)
