@@ -35,23 +35,23 @@ if __name__ == '__main__':
         try:
             parent_folder_path = Path.cwd()
             input_images_folder_path = Path(parent_folder_path) / 'input'
-            if not input_images_folder_path.is_dir():
-                print('-> "input" Folder Not Present. Please Create It And Add JPG Files.')
-                sys.exit(1)
-            input_images_file_path_list = sorted(
-                file_path for file_path in input_images_folder_path.iterdir()
-                if file_path.is_file() and file_path.suffix.lower() == '.jpg'
-            )
-            if not input_images_file_path_list:
-                raise ValueError('No JPG Files Found In "input" Folder')
             output_folder_path = Path(parent_folder_path) / 'output'
             output_folder_path.mkdir(parents = True, exist_ok = True)
             tmp_folder_path = Path(parent_folder_path) / 'tmp'
             tmp_folder_path.mkdir(parents = True, exist_ok = True)
+            converted_images_folder_path = Path(tmp_folder_path) / 'ConvertedImages'
+            converted_images_folder_path.mkdir(parents = True, exist_ok = True)
             encoded_images_folder_path = Path(tmp_folder_path) / 'EncodeImages'
             encoded_images_folder_path.mkdir(parents = True, exist_ok = True)
             encrypted_images_folder_path = Path(tmp_folder_path) / 'EncryptedImages'
             encrypted_images_folder_path.mkdir(parents = True, exist_ok = True)
+        except Exception as error:
+            print(f'ERROR - [Main:S4] - {str(error)}')
+            sys.exit(1)
+
+        # Calling "image_convert" Function:S5
+        try:
+            pass
         except Exception as error:
             print(f'ERROR - [Main:S4] - {str(error)}')
             sys.exit(1)
@@ -93,10 +93,7 @@ if __name__ == '__main__':
 
         # Delete Processed Input Files And Working Folders:S8
         try:
-            for input_image_file_path in input_images_file_path_list:
-                input_image_file_path.unlink()
-            if not any(input_images_folder_path.iterdir()):
-                input_images_folder_path.rmdir()
+            shutil.rmtree(input_images_folder_path)
             shutil.rmtree(encoded_images_folder_path)
             shutil.rmtree(encrypted_images_folder_path)
             if not any(tmp_folder_path.iterdir()):
@@ -110,15 +107,6 @@ if __name__ == '__main__':
         try:
             parent_folder_path = Path.cwd()
             input_images_folder_path = Path(parent_folder_path) / 'input'
-            if not input_images_folder_path.is_dir():
-                print('-> "input" Folder Not Present. Please Create It And Add Encrypted Files.')
-                sys.exit(1)
-            encrypted_image_file_path_list = sorted(
-                file_path for file_path in input_images_folder_path.iterdir()
-                if file_path.is_file()
-            )
-            if not encrypted_image_file_path_list:
-                raise ValueError('No Encrypted Files Found In "input" Folder')
             output_folder_path = Path(parent_folder_path) / 'output'
             output_folder_path.mkdir(parents = True, exist_ok = True)
             tmp_folder_path = Path(parent_folder_path) / 'tmp'
@@ -168,10 +156,7 @@ if __name__ == '__main__':
 
         # Delete Processed Input Files And Working Folders:S13
         try:
-            for encrypted_image_file_path in encrypted_image_file_path_list:
-                encrypted_image_file_path.unlink()
-            if not any(input_images_folder_path.iterdir()):
-                input_images_folder_path.rmdir()
+            shutil.rmtree(input_images_folder_path)
             shutil.rmtree(encoded_images_folder_path)
             shutil.rmtree(original_images_folder_path)
             if not any(tmp_folder_path.iterdir()):
