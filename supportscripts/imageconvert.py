@@ -1,5 +1,5 @@
 # Define "image_convert" Function
-def image_convert(input_images_folder_path: str, converted_images_folder_path: str) -> dict[str, str]:
+def image_convert(input_images_folder_path: str) -> dict[str, str]:
     # Importing Python Modules:S1
     try:
         from pathlib import Path
@@ -8,38 +8,42 @@ def image_convert(input_images_folder_path: str, converted_images_folder_path: s
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '1', 'message': str(error)}
 
-    # Creating Path Object And Check Folders Are Present:S2
+    # Define Folder Path:S2
     try:
-        input_images_folder_path_object = Path(input_images_folder_path)
-        converted_images_folder_path_object = Path(converted_images_folder_path)
-        for folder in (input_images_folder_path_object, converted_images_folder_path_object):
-            if not (folder.exists() and folder.is_dir()):
-                return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '2', 'message': f'"{folder.name}" Folder Not Present'}
+        parent_folder_path = Path.cwd()
+        tmp_folder_path = Path(parent_folder_path) / 'tmp'
+        converted_images_folder_path = Path(tmp_folder_path) / 'ConvertedImages'
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '2', 'message': str(error)}
 
-    # Empty "ConvertedImages" Folder:S3
+    # Recreate "ConvertedImages" Folder:S3
     try:
-        for output_item_path in converted_images_folder_path_object.iterdir():
-            if output_item_path.is_dir():
-                shutil.rmtree(output_item_path)
-            else:
-                output_item_path.unlink()
+        if converted_images_folder_path.exists() and converted_images_folder_path.is_dir():
+            shutil.rmtree(converted_images_folder_path)
+        converted_images_folder_path.mkdir(parents = True, exist_ok = True)
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '3', 'message': str(error)}
 
-    # Create Input Image File Path List:S4
+    # Creating Path Object And Check If "input" Folder Is Present:S4
+    try:
+        input_images_folder_path_object = Path(input_images_folder_path)
+        if not (input_images_folder_path_object.exists() and input_images_folder_path_object.is_dir()):
+            return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '4', 'message': f'"{input_images_folder_path_object.name}" Folder Not Present'}
+    except Exception as error:
+        return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '4', 'message': str(error)}
+
+    # Create Input Image File Path List:S5
     try:
         input_images_file_path_list = sorted(
             file_path for file_path in input_images_folder_path_object.iterdir()
             if file_path.is_file() and file_path.suffix.lower() in ('.heic', '.jpg', '.png')
         )
     except Exception as error:
-        return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '4', 'message': str(error)}
+        return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '5', 'message': str(error)}
 
-    # Create Input Image File Path Dictionary By Creation Date:S5
+    # Create Input Image File Path Dictionary By Creation Date:S6
     try:
-        input_images_file_path_dictionary = {
+        input_images_file_path_date_wise_dictionary = {
             f'{image_number:05d}': file_path
             for image_number, file_path in enumerate(
                 sorted(
@@ -50,12 +54,12 @@ def image_convert(input_images_folder_path: str, converted_images_folder_path: s
             )
         }
     except Exception as error:
-        return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '5', 'message': str(error)}
+        return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '6', 'message': str(error)}
 
-    # Convert Input Images To JPG Format:S6
+    # Convert Input Images To "*.JPG" Format:S7
     try:
-        for image_key, input_image_file_path in input_images_file_path_dictionary.items():
-            converted_image_file_path = converted_images_folder_path_object / f'img{image_key}.jpg'
+        for image_key, input_image_file_path in input_images_file_path_date_wise_dictionary.items():
+            converted_image_file_path = Path(converted_images_folder_path) / f'img{image_key}.jpg'
             ffmpeg_command = [
                 'ffmpeg',
                 '-y',
@@ -69,9 +73,22 @@ def image_convert(input_images_folder_path: str, converted_images_folder_path: s
             subprocess.run(ffmpeg_command, check = True, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
             print(f'{image_key}-> "{input_image_file_path.name}" Converted To "{converted_image_file_path.name}"')
     except subprocess.CalledProcessError as error:
-        return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '6', 'message': f'FFmpeg Failed To Convert "{input_image_file_path.name}"'}
+        return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '7', 'message': f'FFmpeg Failed To Convert "{input_image_file_path.name}"'}
     except Exception as error:
-        return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '6', 'message': str(error)}
+        return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '7', 'message': str(error)}
 
-    # Return Success:S7
-    return {'status': 'SUCCESS', 'file_name': 'Image-Convert', 'step': '7', 'message': 'All The Images Converted To JPG Successfully'}
+    # Empty "input" Folder And Move Converted Images:S8
+    try:
+        for input_item_path in input_images_folder_path_object.iterdir():
+            if input_item_path.is_dir():
+                shutil.rmtree(input_item_path)
+            else:
+                input_item_path.unlink()
+        for converted_image_file_path in sorted(converted_images_folder_path.iterdir()):
+            if converted_image_file_path.is_file():
+                shutil.move(str(converted_image_file_path), str(input_images_folder_path_object))
+    except Exception as error:
+        return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '8', 'message': str(error)}
+
+    # Return Success:S9
+    return {'status': 'SUCCESS', 'file_name': 'Image-Convert', 'step': '9', 'message': 'All The Images Converted To JPG And Moved To "input" Folder Successfully'}
