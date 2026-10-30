@@ -38,6 +38,10 @@ if __name__ == '__main__':
             input_images_folder_path = Path(parent_folder_path) / 'input'
             output_images_folder_path = Path(parent_folder_path) / 'output'
             output_images_folder_path.mkdir(parents = True, exist_ok = True)
+            tmp_folder_path = Path(parent_folder_path) / 'tmp'
+            tmp_folder_path.mkdir(parents = True, exist_ok = True)
+            encrypted_images_folder_path = Path(tmp_folder_path) / 'EncryptedImages'
+            encrypted_images_folder_path.mkdir(parents = True, exist_ok = True)
         except Exception as error:
             print(f'ERROR - [Main:S4] - {str(error)}')
             sys.exit(1)
@@ -56,10 +60,13 @@ if __name__ == '__main__':
 
         # Calling "image_encode" Function:S6
         try:
-            image_encode_backend_response = image_encode(input_images_folder_path = str(input_images_folder_path), encoded_images_folder_path = str(encoded_images_folder_path))
+            image_encode_backend_response = image_encode(input_images_folder_path = str(input_images_folder_path))
             if image_encode_backend_response['status'] == 'ERROR':
                 print(f'ERROR - [Main:S6] - {image_encode_backend_response["message"]}')
                 sys.exit(1)
+            elif image_encode_backend_response['status'] == 'INFO':
+                print(f'-> {image_encode_backend_response["message"]}')
+                sys.exit(0)
             else:
                 print(f'-> {image_encode_backend_response["message"]}')
         except Exception as error:
@@ -69,7 +76,7 @@ if __name__ == '__main__':
         # Encrypt Encoded Text Files:S7
         try:
             encryption_password = getpass.getpass('\n-> Enter Encryption Password: ')
-            image_encrypt_backend_response = image_encrypt(encoded_images_folder_path = str(encoded_images_folder_path), encrypted_images_folder_path = str(encrypted_images_folder_path), encryption_password = encryption_password)
+            image_encrypt_backend_response = image_encrypt(encoded_images_folder_path = str(input_images_folder_path), encrypted_images_folder_path = str(encrypted_images_folder_path), encryption_password = encryption_password)
             if image_encrypt_backend_response['status'] == 'ERROR':
                 print(f'ERROR - [Main:S7] - {image_encrypt_backend_response["message"]}')
                 sys.exit(1)
@@ -89,10 +96,9 @@ if __name__ == '__main__':
             print(f'ERROR - [Main:S8] - {str(error)}')
             sys.exit(1)
 
-        # Delete Processed Input Files And Working Folders:S9
+        # Delete Processed "input" Folder:S9
         try:
             shutil.rmtree(input_images_folder_path)
-            shutil.rmtree(tmp_folder_path)
         except Exception as error:
             print(f'ERROR - [Main:S9] - {str(error)}')
             sys.exit(1)

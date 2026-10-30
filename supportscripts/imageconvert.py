@@ -12,15 +12,14 @@ def image_convert(input_images_folder_path: str) -> dict[str, str]:
     try:
         parent_folder_path = Path.cwd()
         tmp_folder_path = Path(parent_folder_path) / 'tmp'
-        converted_images_folder_path = Path(tmp_folder_path) / 'ConvertedImages'
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '2', 'message': str(error)}
 
-    # Recreate "ConvertedImages" Folder:S3
+    # Recreate "tmp" Folder:S3
     try:
-        if converted_images_folder_path.exists() and converted_images_folder_path.is_dir():
-            shutil.rmtree(converted_images_folder_path)
-        converted_images_folder_path.mkdir(parents = True, exist_ok = True)
+        if tmp_folder_path.exists() and tmp_folder_path.is_dir():
+            shutil.rmtree(tmp_folder_path)
+        tmp_folder_path.mkdir(parents = True, exist_ok = True)
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '3', 'message': str(error)}
 
@@ -59,7 +58,7 @@ def image_convert(input_images_folder_path: str) -> dict[str, str]:
     # Convert Input Images To "*.JPG" Format:S7
     try:
         for image_key, input_image_file_path in input_images_file_path_date_wise_dictionary.items():
-            converted_image_file_path = Path(converted_images_folder_path) / f'img{image_key}.jpg'
+            converted_image_file_path = tmp_folder_path / f'img{image_key}.jpg'
             ffmpeg_command = [
                 'ffmpeg',
                 '-y',
@@ -77,18 +76,19 @@ def image_convert(input_images_folder_path: str) -> dict[str, str]:
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '7', 'message': str(error)}
 
-    # Empty "input" Folder And Move Converted Images:S8
+    # Empty "input" Folder, Copy Converted Images And Delete "tmp" Folder:S8
     try:
         for input_item_path in input_images_folder_path_object.iterdir():
             if input_item_path.is_dir():
                 shutil.rmtree(input_item_path)
             else:
                 input_item_path.unlink()
-        for converted_image_file_path in sorted(converted_images_folder_path.iterdir()):
+        for converted_image_file_path in sorted(tmp_folder_path.iterdir()):
             if converted_image_file_path.is_file():
-                shutil.move(str(converted_image_file_path), str(input_images_folder_path_object))
+                shutil.copy(str(converted_image_file_path), str(input_images_folder_path_object))
+        shutil.rmtree(tmp_folder_path)
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '8', 'message': str(error)}
 
     # Return Success:S9
-    return {'status': 'SUCCESS', 'file_name': 'Image-Convert', 'step': '9', 'message': 'All The Images Converted To JPG And Moved To "input" Folder Successfully'}
+    return {'status': 'SUCCESS', 'file_name': 'Image-Convert', 'step': '9', 'message': 'All The Images Converted To JPG And Copied To "input" Folder Successfully'}
