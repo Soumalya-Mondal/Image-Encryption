@@ -1,5 +1,5 @@
 # Define "image_decrypt" Function
-def image_decrypt(input_images_folder_path: str, encoded_images_folder_path: str, encryption_password: str) -> dict[str, str]:
+def image_decrypt(images_folder_path: str, encryption_password: str) -> dict[str, str]:
     # Define Constant
     SALT_SIZE = 64
 
@@ -13,38 +13,47 @@ def image_decrypt(input_images_folder_path: str, encoded_images_folder_path: str
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '1', 'message': str(error)}
 
-    # Creating Path Object And Check Folders Are Present:S2
+    # Define Folder Path:S2
     try:
-        input_images_folder_path_object = Path(input_images_folder_path)
-        encoded_images_folder_path_object = Path(encoded_images_folder_path)
-        if not (input_images_folder_path_object.exists() and input_images_folder_path_object.is_dir()):
-            return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '2', 'message': f'"{input_images_folder_path_object.name}" Folder Not Present'}
-        encoded_images_folder_path_object.mkdir(parents = True, exist_ok = True)
+        parent_folder_path = Path.cwd()
+        tmp_folder_path = Path(parent_folder_path) / 'tmp'
+        encoded_images_folder_path = Path(tmp_folder_path) / 'EncodedImages'
+        images_folder_path_object = Path(images_folder_path)
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '2', 'message': str(error)}
 
-    # Create Encrypted File Path List And Empty "EncodeImages" Folder:S3
+    # Recreate "EncodedImages" Folder:S3
     try:
-        encrypted_image_file_path_list = sorted(
-            file_path for file_path in input_images_folder_path_object.iterdir()
-            if file_path.is_file()
-        )
-        if not encrypted_image_file_path_list:
-            return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '3', 'message': f'No Encrypted Files Found In "{input_images_folder_path_object.name}" Folder'}
-        for output_item_path in encoded_images_folder_path_object.iterdir():
-            if output_item_path.is_dir():
-                shutil.rmtree(output_item_path)
-            else:
-                output_item_path.unlink()
+        if encoded_images_folder_path.exists() and encoded_images_folder_path.is_dir():
+            shutil.rmtree(encoded_images_folder_path)
+        encoded_images_folder_path.mkdir(parents = True, exist_ok = True)
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '3', 'message': str(error)}
 
-    # Decrypt Encrypted Files:S4
+    # Creating Path Object And Check If "images" Folder Is Present:S4
+    try:
+        if not (images_folder_path_object.exists() and images_folder_path_object.is_dir()):
+            return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '4', 'message': f'"{images_folder_path_object.name}" Folder Not Present'}
+    except Exception as error:
+        return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '4', 'message': str(error)}
+
+    # Create Encrypted File Path List:S5
+    try:
+        encrypted_image_file_path_list = sorted(
+            file_path for file_path in images_folder_path_object.iterdir()
+            if file_path.is_file()
+        )
+        if not encrypted_image_file_path_list:
+            return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '5', 'message': f'No Encrypted Files Found In "{images_folder_path_object.name}" Folder'}
+    except Exception as error:
+        return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '5', 'message': str(error)}
+
+    # Decrypt Encrypted Files:S6
     try:
         for decrypted_number, encrypted_image_file_path in enumerate(encrypted_image_file_path_list, start = 1):
             encrypted_data = encrypted_image_file_path.read_bytes()
             if len(encrypted_data) <= SALT_SIZE:
-                return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '4', 'message': f'Invalid or incomplete encrypted file: {encrypted_image_file_path.name}'}
+                return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '6', 'message': f'Invalid or incomplete encrypted file: {encrypted_image_file_path.name}'}
             salt = encrypted_data[:SALT_SIZE]
             ciphertext = encrypted_data[SALT_SIZE:]
             kdf = Argon2id(
@@ -58,12 +67,22 @@ def image_decrypt(input_images_folder_path: str, encoded_images_folder_path: str
             try:
                 plaintext = Fernet(decryption_key).decrypt(ciphertext)
             except InvalidToken:
-                return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '4', 'message': f'Incorrect password or damaged encrypted file: {encrypted_image_file_path.name}'}
-            decrypted_file_path = encoded_images_folder_path_object / f'{encrypted_image_file_path.name}.txt'
+                return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '6', 'message': f'Incorrect password or damaged encrypted file: {encrypted_image_file_path.name}'}
+            decrypted_file_path = encoded_images_folder_path / f'{encrypted_image_file_path.name}.txt'
             decrypted_file_path.write_bytes(plaintext)
             print(f'{decrypted_number:03d}-> "{encrypted_image_file_path.name}" Has Been Decrypted With Password')
     except Exception as error:
-        return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '4', 'message': str(error)}
+        return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '6', 'message': str(error)}
 
-    # Return Success:S5
-    return {'status': 'SUCCESS', 'file_name': 'Image-Decrypt', 'step': '5', 'message': 'All The Images Decrypted Successfully'}
+    # Clear "images" Folder:S7
+    try:
+        for images_item_path in images_folder_path_object.iterdir():
+            if images_item_path.is_dir():
+                shutil.rmtree(images_item_path)
+            else:
+                images_item_path.unlink()
+    except Exception as error:
+        return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '7', 'message': str(error)}
+
+    # Return Success:S8
+    return {'status': 'SUCCESS', 'file_name': 'Image-Decrypt', 'step': '8', 'message': 'All The Images Decrypted Successfully'}

@@ -5,7 +5,6 @@ if __name__ == '__main__':
         import sys
         from pathlib import Path
         import getpass
-        import shutil
     except Exception as error:
         print(f'ERROR - [Main:S1] - {str(error)}')
 
@@ -95,15 +94,14 @@ if __name__ == '__main__':
         # Define Folder Paths And Validate Input:S11
         try:
             parent_folder_path = Path.cwd()
-            output_images_folder_path = Path(parent_folder_path) / 'output'
-            output_images_folder_path.mkdir(parents = True, exist_ok = True)
+            images_folder_path = Path(parent_folder_path) / 'images'
         except Exception as error:
             print(f'ERROR - [Main:S11] - {str(error)}')
             sys.exit(1)
 
-        # Decrypt Encrypted Files From Input Folder:S12
+        # Decrypt Encrypted Files From "images" Folder:S12
         try:
-            image_decrypt_backend_response = image_decrypt(input_images_folder_path = str(images_folder_path), encoded_images_folder_path = str(encoded_images_folder_path), encryption_password = encryption_password)
+            image_decrypt_backend_response = image_decrypt(images_folder_path = str(images_folder_path), encryption_password = encryption_password)
             if image_decrypt_backend_response['status'] == 'ERROR':
                 print(f'ERROR - [Main:S12] - {image_decrypt_backend_response["message"]}')
                 sys.exit(1)
@@ -113,9 +111,9 @@ if __name__ == '__main__':
             print(f'ERROR - [Main:S12] - {str(error)}')
             sys.exit(1)
 
-        # Decode Encoded Text Files To Original Images:S13
+        # Decode Encoded Text Files To Original Images And Copy To "images" Folder:S13
         try:
-            image_decode_backend_response = image_decode(encoded_images_folder_path = str(encoded_images_folder_path), original_images_folder_path = str(original_images_folder_path))
+            image_decode_backend_response = image_decode(images_folder_path = str(images_folder_path))
             if image_decode_backend_response['status'] == 'ERROR':
                 print(f'ERROR - [Main:S13] - {image_decode_backend_response["message"]}')
                 sys.exit(1)
@@ -123,25 +121,4 @@ if __name__ == '__main__':
                 print(f'-> {image_decode_backend_response["message"]}')
         except Exception as error:
             print(f'ERROR - [Main:S13] - {str(error)}')
-            sys.exit(1)
-
-        # Move Original Images To Output Folder:S14
-        try:
-            for original_image_file_path in sorted(original_images_folder_path.iterdir()):
-                if original_image_file_path.is_file():
-                    shutil.move(str(original_image_file_path), str(output_images_folder_path))
-            print('\n-> Original Images Moved To "output" Folder Successfully')
-        except Exception as error:
-            print(f'ERROR - [Main:S14] - {str(error)}')
-            sys.exit(1)
-
-        # Delete Processed Input Files And Working Folders:S15
-        try:
-            shutil.rmtree(images_folder_path)
-            shutil.rmtree(encoded_images_folder_path)
-            shutil.rmtree(original_images_folder_path)
-            if not any(tmp_folder_path.iterdir()):
-                tmp_folder_path.rmdir()
-        except Exception as error:
-            print(f'ERROR - [Main:S15] - {str(error)}')
             sys.exit(1)
