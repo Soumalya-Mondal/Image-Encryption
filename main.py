@@ -92,6 +92,7 @@ if __name__ == '__main__':
             sys.exit(1)
 
     elif user_choice == 'b':
+        print('')
         # Define Folder Paths And Validate Input:S11
         try:
             parent_folder_path = Path.cwd()
