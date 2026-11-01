@@ -25,7 +25,7 @@ def image_convert(images_folder_path: str) -> dict[str, str]:
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '3', 'message': str(error)}
 
-    # Creating Path Object And Check If "input" Folder Is Present:S4
+    # Creating Path Object And Check If "images" Folder Is Present:S4
     try:
         images_folder_path_object = Path(images_folder_path)
         if not (images_folder_path_object.exists() and images_folder_path_object.is_dir()):
