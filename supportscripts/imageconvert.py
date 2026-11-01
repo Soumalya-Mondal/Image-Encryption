@@ -1,5 +1,5 @@
 # Define "image_convert" Function
-def image_convert(input_images_folder_path: str) -> dict[str, str]:
+def image_convert(images_folder_path: str) -> dict[str, str]:
     # Importing Python Modules:S1
     try:
         from pathlib import Path
@@ -27,16 +27,16 @@ def image_convert(input_images_folder_path: str) -> dict[str, str]:
 
     # Creating Path Object And Check If "input" Folder Is Present:S4
     try:
-        input_images_folder_path_object = Path(input_images_folder_path)
-        if not (input_images_folder_path_object.exists() and input_images_folder_path_object.is_dir()):
-            return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '4', 'message': f'"{input_images_folder_path_object.name}" Folder Not Present'}
+        images_folder_path_object = Path(images_folder_path)
+        if not (images_folder_path_object.exists() and images_folder_path_object.is_dir()):
+            return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '4', 'message': f'"{images_folder_path_object.name}" Folder Not Present'}
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '4', 'message': str(error)}
 
     # Create Input Image File Path List:S5
     try:
         input_images_file_path_list = sorted(
-            file_path for file_path in input_images_folder_path_object.iterdir()
+            file_path for file_path in images_folder_path_object.iterdir()
             if file_path.is_file() and file_path.suffix.lower() in ('.heic', '.jpg', '.png')
         )
     except Exception as error:
@@ -78,16 +78,15 @@ def image_convert(input_images_folder_path: str) -> dict[str, str]:
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '7', 'message': str(error)}
 
-    # Empty "input" Folder And Delete "input" Folder:S8
+    # Empty "images" Folder:S8
     try:
-        for input_item_path in input_images_folder_path_object.iterdir():
+        for input_item_path in images_folder_path_object.iterdir():
             if input_item_path.is_dir():
                 shutil.rmtree(input_item_path)
             else:
                 input_item_path.unlink()
-        input_images_folder_path_object.rmdir()
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Convert', 'step': '8', 'message': str(error)}
 
     # Return Success:S9
-    return {'status': 'SUCCESS', 'file_name': 'Image-Convert', 'step': '9', 'message': 'All The Images Converted To JPG And "input" Folder Deleted Successfully'}
+    return {'status': 'SUCCESS', 'file_name': 'Image-Convert', 'step': '9', 'message': 'All The Images Converted To JPG Successfully'}

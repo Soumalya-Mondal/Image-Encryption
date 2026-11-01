@@ -31,34 +31,44 @@ if __name__ == '__main__':
         print(f'ERROR - [Main:S3] - {str(error)}')
         sys.exit(1)
 
+    # Enter Password And Confirm Password:S4
+    try:
+        encryption_password = getpass.getpass('\n-> Enter Password: ')
+        confirm_password = getpass.getpass('-> Confirm Password: ')
+        if encryption_password != confirm_password:
+            print('-> Password And Confirm Password Do Not Match.')
+            sys.exit(1)
+    except Exception as error:
+        print(f'ERROR - [Main:S4] - {str(error)}')
+        sys.exit(1)
+
     if user_choice == 'a':
-        # Define Folder Paths And Validate Input:S4
+        print('')
+        # Define Folder Paths And Validate Input:S5
         try:
             parent_folder_path = Path.cwd()
-            input_images_folder_path = Path(parent_folder_path) / 'input'
-            output_images_folder_path = Path(parent_folder_path) / 'output'
-            output_images_folder_path.mkdir(parents = True, exist_ok = True)
-        except Exception as error:
-            print(f'ERROR - [Main:S4] - {str(error)}')
-            sys.exit(1)
-
-        # Calling "image_convert" Function:S5
-        try:
-            image_convert_backend_response = image_convert(input_images_folder_path = str(input_images_folder_path))
-            if image_convert_backend_response['status'] == 'ERROR':
-                print(f'ERROR - [Main:S5] - {image_convert_backend_response["message"]}')
-                sys.exit(1)
-            else:
-                print(f'-> {image_convert_backend_response["message"]}')
+            images_folder_path = Path(parent_folder_path) / 'images'
         except Exception as error:
             print(f'ERROR - [Main:S5] - {str(error)}')
             sys.exit(1)
 
-        # Calling "image_encode" Function:S6
+        # Calling "image_convert" Function:S6
+        try:
+            image_convert_backend_response = image_convert(images_folder_path = str(images_folder_path))
+            if image_convert_backend_response['status'] == 'ERROR':
+                print(f'ERROR - [Main:S6] - {image_convert_backend_response["message"]}')
+                sys.exit(1)
+            else:
+                print(f'-> {image_convert_backend_response["message"]}')
+        except Exception as error:
+            print(f'ERROR - [Main:S6] - {str(error)}')
+            sys.exit(1)
+
+        # Calling "image_encode" Function:S7
         try:
             image_encode_backend_response = image_encode()
             if image_encode_backend_response['status'] == 'ERROR':
-                print(f'ERROR - [Main:S6] - {image_encode_backend_response["message"]}')
+                print(f'ERROR - [Main:S7] - {image_encode_backend_response["message"]}')
                 sys.exit(1)
             elif image_encode_backend_response['status'] == 'INFO':
                 print(f'-> {image_encode_backend_response["message"]}')
@@ -66,43 +76,34 @@ if __name__ == '__main__':
             else:
                 print(f'-> {image_encode_backend_response["message"]}')
         except Exception as error:
-            print(f'ERROR - [Main:S6] - {str(error)}')
+            print(f'ERROR - [Main:S7] - {str(error)}')
             sys.exit(1)
 
-        # Encrypt Encoded Text Files:S7
+        # Encrypt Encoded Text Files:S8
         try:
-            encryption_password = getpass.getpass('\n-> Enter Encryption Password: ')
-            image_encrypt_backend_response = image_encrypt(output_images_folder_path = str(output_images_folder_path), encryption_password = encryption_password)
+            image_encrypt_backend_response = image_encrypt(images_folder_path = str(images_folder_path), encryption_password = encryption_password)
             if image_encrypt_backend_response['status'] == 'ERROR':
-                print(f'ERROR - [Main:S7] - {image_encrypt_backend_response["message"]}')
+                print(f'ERROR - [Main:S8] - {image_encrypt_backend_response["message"]}')
                 sys.exit(1)
             else:
                 print(f'-> {image_encrypt_backend_response["message"]}')
         except Exception as error:
-            print(f'ERROR - [Main:S7] - {str(error)}')
+            print(f'ERROR - [Main:S8] - {str(error)}')
             sys.exit(1)
 
     elif user_choice == 'b':
         # Define Folder Paths And Validate Input:S11
         try:
             parent_folder_path = Path.cwd()
-            input_images_folder_path = Path(parent_folder_path) / 'input'
             output_images_folder_path = Path(parent_folder_path) / 'output'
             output_images_folder_path.mkdir(parents = True, exist_ok = True)
-            tmp_folder_path = Path(parent_folder_path) / 'tmp'
-            tmp_folder_path.mkdir(parents = True, exist_ok = True)
-            encoded_images_folder_path = Path(tmp_folder_path) / 'EncodeImages'
-            encoded_images_folder_path.mkdir(parents = True, exist_ok = True)
-            original_images_folder_path = Path(tmp_folder_path) / 'OriginalImages'
-            original_images_folder_path.mkdir(parents = True, exist_ok = True)
         except Exception as error:
             print(f'ERROR - [Main:S11] - {str(error)}')
             sys.exit(1)
 
         # Decrypt Encrypted Files From Input Folder:S12
         try:
-            encryption_password = getpass.getpass('\n-> Enter Decryption Password: ')
-            image_decrypt_backend_response = image_decrypt(input_images_folder_path = str(input_images_folder_path), encoded_images_folder_path = str(encoded_images_folder_path), encryption_password = encryption_password)
+            image_decrypt_backend_response = image_decrypt(input_images_folder_path = str(images_folder_path), encoded_images_folder_path = str(encoded_images_folder_path), encryption_password = encryption_password)
             if image_decrypt_backend_response['status'] == 'ERROR':
                 print(f'ERROR - [Main:S12] - {image_decrypt_backend_response["message"]}')
                 sys.exit(1)
@@ -136,7 +137,7 @@ if __name__ == '__main__':
 
         # Delete Processed Input Files And Working Folders:S15
         try:
-            shutil.rmtree(input_images_folder_path)
+            shutil.rmtree(images_folder_path)
             shutil.rmtree(encoded_images_folder_path)
             shutil.rmtree(original_images_folder_path)
             if not any(tmp_folder_path.iterdir()):
