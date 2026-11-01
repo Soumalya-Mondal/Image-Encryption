@@ -70,7 +70,7 @@ def image_decrypt(images_folder_path: str, encryption_password: str) -> dict[str
                 return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '6', 'message': f'Incorrect password or damaged encrypted file: {encrypted_image_file_path.name}'}
             decrypted_file_path = encoded_images_folder_path / f'{encrypted_image_file_path.name}.txt'
             decrypted_file_path.write_bytes(plaintext)
-            print(f'{decrypted_number:03d}-> "{encrypted_image_file_path.name}" Has Been Decrypted With Password')
+            print(f'{decrypted_number:05d}-> "{encrypted_image_file_path.name}" Has Been Decrypted With Password')
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Decrypt', 'step': '6', 'message': str(error)}
 

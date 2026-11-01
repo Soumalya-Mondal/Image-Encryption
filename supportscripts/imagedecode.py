@@ -52,7 +52,7 @@ def image_decode(images_folder_path: str) -> dict[str, str]:
             image_bytes = base64.b64decode(encoded_text_file_path.read_bytes(), validate = True)
             original_image_file_path = original_images_folder_path / f'{encoded_text_file_path.stem}.jpg'
             original_image_file_path.write_bytes(image_bytes)
-            print(f'{decoded_number:03d}-> "{encoded_text_file_path.name}" Has Been Decoded From Base64')
+            print(f'{decoded_number:05d}-> "{encoded_text_file_path.name}" Has Been Decoded From Base64')
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Decode', 'step': '6', 'message': str(error)}
 

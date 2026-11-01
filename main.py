@@ -74,6 +74,7 @@ if __name__ == '__main__':
                 sys.exit(0)
             else:
                 print(f'-> {image_encode_backend_response["message"]}')
+                print('')
         except Exception as error:
             print(f'ERROR - [Main:S7] - {str(error)}')
             sys.exit(1)
