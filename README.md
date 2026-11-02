@@ -1,274 +1,285 @@
 # Image Encryption
 
-**A Python command-line tool for password-protected JPG encryption and recovery.**
+> A local command-line utility for converting, encrypting, and recovering image collections with password-derived authenticated encryption.
 
 [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Cryptography](https://img.shields.io/badge/Cryptography-50.0.2%2B-205375)](https://cryptography.io/)
-[![Package Manager](https://img.shields.io/badge/Package_Manager-uv-DE5FE9)](https://docs.astral.sh/uv/)
+[![Cryptography](https://img.shields.io/badge/cryptography-50.0.2%2B-205375)](https://cryptography.io/)
+[![Package Manager](https://img.shields.io/badge/package%20manager-uv-DE5FE9)](https://docs.astral.sh/uv/)
 
-Convert JPG images into Base64 text, encrypt them using Fernet with Argon2id-derived keys, and restore them using the same password. Files are processed locally with per-file progress messages.
+Image Encryption is an interactive Python application that normalizes supported images to JPEG, encodes the resulting bytes as Base64, and protects each file with a unique Argon2id-derived Fernet key. Decryption reverses the pipeline and restores JPEG files to the same working directory.
 
-> [!WARNING]
-> **Back up your files before using this tool.** After all batch results have been moved to `output`, the application deletes the processed input files. Skipped files and subfolders are preserved, and `input` is removed only when empty. Use dedicated working copies, never your only copy. The generated folders inside `tmp` are application-managed and are cleared before reuse; do not store personal files there.
+> [!CAUTION]
+> This application **deletes and replaces the contents of the `images/` directory** during normal operation. Encryption removes all original entries after conversion; decryption clears the encrypted inputs before writing the recovered images. Always work with copies and maintain an independent backup.
 
-## Contents
+## Table of Contents
 
-- [Features](#features)
-- [Getting Started](#getting-started)
+- [Key Features](#key-features)
+- [Requirements](#requirements)
+- [Installation](#installation)
 - [Usage](#usage)
-- [How It Works](#how-it-works)
+- [Processing Model](#processing-model)
+- [Cryptographic Design](#cryptographic-design)
+- [File and Directory Behavior](#file-and-directory-behavior)
 - [Project Structure](#project-structure)
-- [Security and Operational Notes](#security-and-operational-notes)
-- [Error Handling](#error-handling)
+- [Operational and Security Considerations](#operational-and-security-considerations)
 - [Troubleshooting](#troubleshooting)
 
-## Features
+## Key Features
 
-- **Batch processing:** encrypt `.jpg` files directly inside the input folder.
-- **Password-based encryption:** derive a separate key for each file using Argon2id and a random salt.
-- **Authenticated encryption:** use Fernet to encrypt data and detect invalid tokens during decryption.
-- **Reversible encoding:** recover the original image bytes without image recompression.
-- **Interactive terminal workflow:** choose encryption or decryption and enter a password using `getpass`.
-- **Readable progress:** numbered file updates, completion messages, and step-specific errors.
+- Processes image collections through a simple interactive terminal interface.
+- Accepts `.heic`, `.jpg`, and `.png` source files for encryption.
+- Uses FFmpeg to normalize input files to high-quality JPEG images.
+- Renames converted images sequentially as `img00001.jpg`, `img00002.jpg`, and so on.
+- Derives an independent encryption key for every file with Argon2id and a random 64-byte salt.
+- Uses Fernet authenticated encryption to provide confidentiality and tamper detection.
+- Requests and confirms the password without displaying it in the terminal.
+- Performs all application-level processing locally.
 
-## Getting Started
+## Requirements
 
-### Requirements
-
-| Requirement | Details |
+| Component | Requirement |
 | --- | --- |
-| Python | 3.12 or newer; the repository pins 3.12 by default |
-| Package manager | [uv](https://docs.astral.sh/uv/getting-started/installation/) |
-| Python dependency | `cryptography>=50.0.2`, declared in [pyproject.toml](pyproject.toml) |
+| Python | 3.12 or newer; `.python-version` currently selects Python 3.14 |
+| Dependency manager | [uv](https://docs.astral.sh/uv/getting-started/installation/) |
+| System dependency | [FFmpeg](https://ffmpeg.org/download.html), available as `ffmpeg` on `PATH` |
+| Python dependency | `cryptography>=50.0.2` |
 
-### Installation
+FFmpeg is required for the encryption workflow because every supported source image is converted to JPEG before encoding and encryption. It is not managed by `uv` and must be installed separately through your operating system.
 
-1. Clone or download this repository.
-2. Open a terminal in the project root.
-3. Synchronize the environment using the committed dependency lockfile:
+## Installation
 
-   ```powershell
+1. Clone the repository and enter its root directory:
+
+   ```bash
+   git clone <repository-url>
+   cd Image-Encryption
+   ```
+
+2. Install FFmpeg and confirm that it is available:
+
+   ```bash
+   ffmpeg -version
+   ```
+
+3. Reproduce the locked Python environment:
+
+   ```bash
    uv sync --locked
    ```
 
-The commands below use Windows PowerShell syntax. **Always launch the application from the project root:** input, output, temporary folders, and the support-module search path are based on the current working directory.
+4. Verify the application starts from the repository root:
+
+   ```bash
+   uv run python main.py
+   ```
+
+> [!IMPORTANT]
+> Run the program from the repository root. Runtime paths are resolved from the current working directory.
 
 ## Usage
 
+The `images/` directory is both the input and output location. The repository currently includes this directory; create it if it is absent.
+
 ### Encrypt Images
 
-1. Keep a backup of your original images outside the project working folders.
-2. Create an `input` folder in the project root.
-3. Copy the JPG files you want to encrypt into it:
+1. Back up the original files outside this repository.
+2. Place the source images directly inside `images/`.
+3. Run the application:
 
-   ```text
-   input\
-   |-- img001.jpg
-   |-- img002.jpg
-   `-- img003.jpg
+   ```bash
+   uv run python main.py
    ```
 
-4. Start the application:
+4. Select `a` for encryption.
+5. Enter the password twice when prompted.
 
-   ```powershell
-   uv run .\main.py
-   ```
+The workflow:
 
-5. Select `a` and enter an encryption password.
-6. Collect the extensionless encrypted files from `output`.
+1. Selects regular `.heic`, `.jpg`, and `.png` files from `images/`.
+2. Sorts them by filesystem birth time when available, otherwise by metadata-change time.
+3. Converts them to JPEG using FFmpeg and assigns sequential names.
+4. Deletes **every file and subdirectory** from `images/`.
+5. Base64-encodes each converted JPEG.
+6. Encrypts each encoded file and copies the extensionless encrypted outputs back to `images/`.
+7. Removes the temporary workspace after successful completion.
 
-**Example terminal output**
+Example result:
 
 ```text
-(a) -> Image Encryption
-(b) -> Image Decryption
--> Select Option: a
-
-001-> "img001.jpg" File Encoded Into Base64
-002-> "img002.jpg" File Encoded Into Base64
--> All The Images Encoded Into Base64 Successfully
-
--> Enter Encryption Password:
-001-> "img001.txt" Has Been Encrypted With Password
-002-> "img002.txt" Has Been Encrypted With Password
--> All The Images Encrypted Successfully
-
--> Encrypted Files Moved To "output" Folder Successfully
+images/
+├── img00001
+├── img00002
+└── img00003
 ```
 
-For example, `img001.jpg` becomes an encrypted file named `img001`. Keep its name unchanged if you want to recover the same image filename.
+The original filenames and formats are not preserved. The assigned sequence determines the names recovered during decryption.
 
 ### Decrypt Images
 
-1. Back up your encrypted files outside the project working folders.
-2. Create the `input` folder if it was removed after the previous run.
-3. Place only this tool's encrypted files inside `input`. To reverse the previous run, move the encrypted files from `output` into `input`.
-4. Start the application:
+1. Back up the encrypted files.
+2. Ensure `images/` contains only encrypted files generated by this application.
+3. Run the application:
 
-   ```powershell
-   uv run .\main.py
+   ```bash
+   uv run python main.py
    ```
 
-5. Select `b` and enter the password used to encrypt those files.
-6. Collect the restored `.jpg` images from `output`.
+4. Select `b` for decryption.
+5. Enter and confirm the same password used for encryption.
 
-**Example terminal output**
-
-```text
-(a) -> Image Encryption
-(b) -> Image Decryption
--> Select Option: b
-
--> Enter Decryption Password:
-001-> "img001" Has Been Decrypted With Password
-002-> "img002" Has Been Decrypted With Password
--> All The Images Decrypted Successfully
-
-001-> "img001.txt" Has Been Decoded From Base64
-002-> "img002.txt" Has Been Decoded From Base64
--> All The Images Decoded From Base64 Successfully
-
--> Original Images Moved To "output" Folder Successfully
-```
-
-> [!IMPORTANT]
-> Move previous results to a safe location before another run to avoid output filename collisions. Decryption attempts every regular file directly inside `input`, so do not mix encrypted files with images or unrelated documents. All files in a decryption batch must use the password entered for that run.
-
-## How It Works
-
-### Processing Pipeline
+After successful decryption, `images/` contains restored JPEG files:
 
 ```text
-Encryption
-JPG bytes -> Base64 text -> Argon2id-derived key + Fernet -> Encrypted file
-
-Decryption
-Encrypted file -> Argon2id-derived key + Fernet -> Base64 text -> JPG bytes
+images/
+├── img00001.jpg
+├── img00002.jpg
+└── img00003.jpg
 ```
 
-Base64 is a reversible encoding step, **not encryption**. Confidentiality and token authentication are provided by Fernet.
+All regular files in `images/` are treated as encrypted inputs. A wrong password, damaged file, or unrelated file causes the decryption stage to fail.
 
-### Key Derivation
+## Processing Model
 
-A fresh random salt is generated for each encrypted file. The password is UTF-8 encoded and passed to Argon2id using these parameters:
+### Encryption Pipeline
+
+```text
+HEIC/JPG/PNG source
+        │
+        ▼
+FFmpeg JPEG conversion and sequential renaming
+        │
+        ▼
+Base64 encoding
+        │
+        ▼
+Argon2id key derivation + Fernet encryption
+        │
+        ▼
+Extensionless encrypted file in images/
+```
+
+### Decryption Pipeline
+
+```text
+Encrypted file in images/
+        │
+        ▼
+Argon2id key derivation + Fernet decryption
+        │
+        ▼
+Strict Base64 decoding
+        │
+        ▼
+JPEG file in images/
+```
+
+Base64 is a transport encoding, not a security mechanism. Protection is provided by the password-derived key and Fernet encryption.
+
+## Cryptographic Design
+
+Each encrypted file uses a fresh random salt and an independently derived key.
 
 | Parameter | Value |
 | --- | --- |
-| Salt size | 64 bytes |
+| Key derivation function | Argon2id |
+| Salt | 64 random bytes per file |
 | Derived key length | 32 bytes |
 | Iterations | 3 |
 | Lanes | 4 |
 | Memory cost | 65,536 KiB (64 MiB) |
+| Encryption primitive | Fernet |
+| Password encoding | UTF-8 |
 | Fernet key encoding | URL-safe Base64 |
 
-### Encrypted File Layout
-
-Each encrypted file contains:
+### Encrypted File Format
 
 ```text
-+----------------------+---------------------------+
-| Random salt          | Fernet token              |
-| First 64 bytes       | Remaining bytes           |
-+----------------------+---------------------------+
++----------------------+----------------------------------+
+| Salt                 | Fernet token                     |
+| bytes 0–63           | byte 64 through end of file      |
++----------------------+----------------------------------+
 ```
 
-Decryption reads the salt, derives the key from the supplied password, and decrypts the token. The salt is stored with the encrypted data; the password is not written to the file.
+The salt is not secret and is stored with the ciphertext. The password is not persisted by the application.
 
-There is no custom format-version header, and the Argon2id parameters are not embedded in the file. Changing those parameters or the salt size can break compatibility with existing encrypted files.
+> [!NOTE]
+> The format has no magic bytes, version identifier, or embedded key-derivation parameters. Changing the salt size or Argon2id settings will make existing encrypted files incompatible unless migration logic is added.
+
+## File and Directory Behavior
+
+| Path | Purpose | Lifecycle |
+| --- | --- | --- |
+| `images/` | User-facing input and output directory | Destructively replaced during both workflows |
+| `tmp/ConvertedImages/` | JPEG-normalized source files | Encryption only; removed before completion |
+| `tmp/EncodedImages/` | Base64 text awaiting encryption, or decrypted Base64 text awaiting decoding | Temporary |
+| `tmp/EncryptedImages/` | Encrypted files before copying to `images/` | Encryption only |
+| `tmp/OriginalImages/` | Reconstructed JPEG files before copying to `images/` | Decryption only |
+
+At the beginning of encryption, the entire `tmp/` tree is removed and recreated. Both successful workflows remove `tmp/` at their final stage. A failed run may leave partial temporary data behind.
 
 ## Project Structure
 
 ```text
-Image-Encryption\
-|-- main.py
-|-- supportscripts\
-|   |-- imageencode.py
-|   |-- imageencrypt.py
-|   |-- imagedecrypt.py
-|   `-- imagedecode.py
-|-- .gitignore
-|-- .python-version
-|-- pyproject.toml
-|-- uv.lock
-`-- README.md
+Image-Encryption/
+├── images/                     # Destructive input/output workspace
+├── supportscripts/
+│   ├── imageconvert.py         # Source discovery and FFmpeg conversion
+│   ├── imageencode.py          # JPEG-to-Base64 encoding
+│   ├── imageencrypt.py         # Argon2id derivation and Fernet encryption
+│   ├── imagedecrypt.py         # Fernet decryption to Base64 text
+│   └── imagedecode.py          # Base64 decoding and JPEG restoration
+├── main.py                     # Interactive CLI and workflow orchestration
+├── pyproject.toml              # Project metadata and dependencies
+├── uv.lock                     # Reproducible dependency lockfile
+├── .python-version             # Preferred local Python version
+└── README.md
 ```
 
-| Script | Responsibility |
-| --- | --- |
-| [main.py](main.py) | Menu, password prompts, workflow coordination, output moves, and cleanup |
-| [imageencode.py](supportscripts/imageencode.py) | Convert JPG bytes into Base64 text files |
-| [imageencrypt.py](supportscripts/imageencrypt.py) | Generate salts, derive keys, and encrypt the encoded files |
-| [imagedecrypt.py](supportscripts/imagedecrypt.py) | Read salts, derive keys, and decrypt files into Base64 text |
-| [imagedecode.py](supportscripts/imagedecode.py) | Decode Base64 text into JPG files |
-
-### Working Folders
-
-| Folder | Purpose | Lifecycle |
-| --- | --- | --- |
-| `input` | JPG images for encryption or encrypted files for decryption | Created by you; processed files are deleted after all results are moved, and the folder is removed only when empty |
-| `output` | Encrypted files or restored JPG images | Created automatically if missing; retained |
-| `tmp\EncodeImages` | Base64 text used by either workflow | Temporary |
-| `tmp\EncryptedImages` | Encrypted files awaiting transfer to output | Encryption only |
-| `tmp\OriginalImages` | Restored images awaiting transfer to output | Decryption only |
-
-The working folders used by the selected operation are cleared before reuse and removed during final cleanup. Other contents of `tmp` are preserved, and the root `tmp` folder is removed only when empty. Errors can leave partial results and temporary files behind.
-
-## Security and Operational Notes
-
-- **Use a strong, unique password.** There is no password recovery or confirmation prompt.
-- **Back up both originals and encrypted files.** Do not rely on a single encryption/decryption run as your only recovery strategy.
-- **Only `.jpg` input is selected for encryption.** Matching is case-insensitive, but `.jpeg`, `.png`, and other extensions are not selected. Subfolders are not processed.
-- **Image contents are not validated.** Encryption selects files by extension, and decryption writes restored files with a `.jpg` suffix.
-- **Filenames remain visible.** Encrypted output keeps each input file's basename.
-- **Temporary data is not encrypted at rest throughout the workflow.** Base64 text and restored images are written to disk. Normal deletion is not secure erasure.
-- **Empty batches are rejected.** Encryption requires at least one `.jpg` file, and decryption requires at least one regular input file. Empty eligible-file lists return an error instead of reaching successful cleanup.
-- **Conflicting JPG names are rejected.** Files that would produce the same Base64 filename, such as `photo.jpg` and `photo.JPG` on a case-sensitive filesystem, must be renamed before encryption.
-- **Use one operation at a time.** Do not run multiple instances in the same project folder or modify input files while a run is active, including while entering a password. The workflow does not lock files against concurrent changes.
-- **Processing and cleanup are not transactional.** A failure can leave some files processed and others unfinished. Input cleanup starts only after all batch results have been moved to `output`. Inspect leftover output before retrying; each helper clears its generated destination folder before writing new files.
-- **Base64 decoding is strict.** Invalid Base64 characters and padding errors are reported rather than silently ignored. This is not a check that the decoded bytes form a valid JPEG image.
-- **Files are loaded into memory.** Base64 adds size overhead, so large images require additional memory and disk space.
-- **Review files before publishing to GitHub.** The [.gitignore](.gitignore) excludes `input`, `output`, and `tmp`. Ignore rules do not untrack files already committed to Git; remove any previously tracked private data from the index separately.
-
-## Error Handling
-
-The helper functions return dictionaries containing `status`, `file_name`, `step`, and `message`. For example, [image_decrypt](supportscripts/imagedecrypt.py) returns this response for an incorrect password or a damaged Fernet token:
+Helper functions return a consistent status dictionary:
 
 ```python
 {
-    'status': 'ERROR',
-    'file_name': 'Image-Decrypt',
-    'step': '4',
-    'message': 'Incorrect password or damaged encrypted file: img001'
+    "status": "SUCCESS" | "INFO" | "ERROR",
+    "file_name": "Component-Name",
+    "step": "N",
+    "message": "Human-readable result",
 }
 ```
 
-The `file_name` field identifies the helper, while `step` identifies its internal processing stage. Successful responses use `status: 'SUCCESS'` with the same fields.
+`main.py` translates an `ERROR` response into a terminal message and exits with a non-zero status.
 
-The decryption helper returns error dictionaries directly, without explicitly raising `ValueError`, for:
+## Operational and Security Considerations
 
-- No encrypted input files: helper step `3`.
-- An incomplete file containing no data beyond the 64-byte salt: helper step `4`.
-- An incorrect password or damaged encrypted token: helper step `4`.
-
-Other processing exceptions are caught by the relevant stage handler and returned in the same error format.
-
-When the decryption helper returns `ERROR`, [main.py](main.py) prints the message with its CLI step identifier and exits with status `1`:
-
-```text
-ERROR - [Main:S10] - Incorrect password or damaged encrypted file: img001
-```
-
-The CLI does not proceed to image decoding, output moves, or input cleanup after that failure. Temporary files already produced earlier in the batch can remain.
+- **Maintain independent backups.** Directory replacement is intentional and is not transactional.
+- **Use a strong, unique password.** There is no password recovery mechanism.
+- **The password must be entered twice.** Both encryption and decryption require matching password and confirmation values.
+- **Original metadata is not preserved reliably.** Encryption converts files to JPEG, changes filenames, and may discard format-specific or image metadata.
+- **Only top-level supported files are converted.** Nested directories are not processed as images, but they are deleted when `images/` is cleared.
+- **Decryption accepts every regular file.** Keep unrelated files out of `images/` during recovery.
+- **Temporary plaintext exists on disk.** Converted JPEGs, Base64 text, and recovered images are written under `tmp/`; ordinary deletion is not secure erasure.
+- **Memory and disk usage scale with image size.** Files are read fully into memory, and Base64 introduces approximately 33% size overhead before encryption.
+- **Concurrent runs are unsafe.** Multiple instances share and modify the same `images/` and `tmp/` paths without locking.
+- **Output copy operations can overwrite same-named files.** Use an isolated working directory and do not modify files while the application is running.
+- **Fernet authenticates encrypted content, not filenames.** Encrypted filenames remain visible and can be renamed; the renamed basename becomes the restored JPEG name.
+- **This is a compact utility, not a formally audited archival format.** Preserve the application version and tested environment with long-lived encrypted collections.
 
 ## Troubleshooting
 
-| Symptom | What to check |
+| Symptom | Resolution |
 | --- | --- |
-| `"input" Folder Not Present` | Create `input` in the project root before running either operation. |
-| `No JPG Files Found In "input" Folder` | Add regular `.jpg` files directly inside `input`; other image extensions and subfolders are not processed. |
-| `No Encrypted Files Found In "input" Folder` | Place this tool's encrypted files directly inside `input` before selecting decryption. |
-| `JPG Files Have Conflicting Base Names` | Rename images that would produce the same encoded filename before retrying encryption. |
-| `Incorrect password or damaged encrypted file` | Use the original password and an intact encrypted file produced by this tool. |
-| `Invalid or incomplete encrypted file` | The file is too short to contain the expected salt and encrypted token; restore it from a backup. |
-| A destination file already exists | Move previous results out of `output` before retrying. Check for partial results from the failed run. |
-| Module import errors | Run from the project root and synchronize dependencies with `uv sync --locked`. |
+| `"images" Folder Not Present` | Create an `images/` directory in the repository root. |
+| `No JPG Files Found In "ConvertedImages" Folder` | Ensure `images/` contains a supported `.heic`, `.jpg`, or `.png` file and that FFmpeg can decode it. |
+| `FFmpeg Failed To Convert ...` | Confirm FFmpeg is installed, the input is readable, and the file content matches a supported image format. |
+| `No Encrypted Files Found In "images" Folder` | Add extensionless encrypted files produced by this application. |
+| `Incorrect password or damaged encrypted file` | Verify the password and restore an intact encrypted file from backup. |
+| `Invalid or incomplete encrypted file` | The file does not contain the expected 64-byte salt followed by a Fernet token. |
+| `Invalid base64-encoded string` or similar | Decryption produced data that is not valid encoded image content; verify file provenance and integrity. |
+| Import or module errors | Run from the repository root and execute `uv sync --locked`. |
+| `ffmpeg` not found | Install FFmpeg and ensure its executable is available on `PATH`. |
+
+## Development Notes
+
+- The project currently has no automated test suite.
+- Runtime behavior is organized as a procedural pipeline of helper functions under `supportscripts/`.
+- Cryptographic constants are duplicated in `imageencrypt.py` and `imagedecrypt.py`; they must remain synchronized for compatibility.
+- When changing workflow behavior, update this README together with the implementation.
