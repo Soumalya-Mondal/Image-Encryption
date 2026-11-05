@@ -1,5 +1,5 @@
 # Define "database_create" Function
-def database_create() -> dict[str, str]:
+def database_create(database_folder_path: str) -> dict[str, str]:
     # Importing Python Modules:S1
     try:
         from pathlib import Path
@@ -9,16 +9,14 @@ def database_create() -> dict[str, str]:
 
     # Define Folder Path:S2
     try:
-        parent_folder_path = Path.cwd()
-        database_folder_path = Path(parent_folder_path) / 'database'
-        database_folder_path.mkdir(parents = True, exist_ok = True)
-        image_encryption_database_file_path = Path(database_folder_path) / 'ImageEncryption.db'
+        database_folder_path_object = Path(database_folder_path)
+        image_encryption_database_file_path = Path(database_folder_path_object) / 'ImageEncryption.db'
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Database-Create', 'step': '2', 'message': str(error)}
 
     # Check If Database Already Exists:S3
     try:
-        if image_encryption_database_file_path.exists() and image_encryption_database_file_path.is_file():
+        if ((image_encryption_database_file_path.exists()) and (image_encryption_database_file_path.is_file())):
             return {'status': 'INFO', 'file_name': 'Database-Create', 'step': '3', 'message': 'Database Already Exists'}
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Database-Create', 'step': '3', 'message': str(error)}
@@ -31,8 +29,7 @@ def database_create() -> dict[str, str]:
                 file_name TEXT NOT NULL,
                 file_path TEXT NOT NULL,
                 file_type TEXT NOT NULL DEFAULT 'jpg' CHECK(file_type IN ('heic', 'jpg', 'jpeg', 'png')),
-                file_size BIGINT NOT NULL,
-                file_creation_at TEXT NOT NULL,
+                file_size_bytes BIGINT NOT NULL,
                 file_hash TEXT NOT NULL,
                 file_encryption_status TEXT NOT NULL DEFAULT 'No' CHECK(file_encryption_status IN ('Yes', 'No'))
             )
