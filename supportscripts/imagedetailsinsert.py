@@ -1,6 +1,9 @@
 # Define "image_details_insert" Function
 def image_details_insert(database_folder_path: str, images_folder_path: str) -> dict[str, str]:
-    # Importing Python Modules:S1
+    # Define Constant
+    image_details_nested_list = []
+
+    # Importing Python Modules:S13
     try:
         from pathlib import Path
         import sqlite3
@@ -38,16 +41,14 @@ def image_details_insert(database_folder_path: str, images_folder_path: str) -> 
             file_path for file_path in images_folder_path_object.iterdir()
             if file_path.is_file()
         )
-        image_details_nested_list = []
         for input_image_file_path in input_image_file_path_list:
             file_name = input_image_file_path.name
             file_path = str(input_image_file_path)
             file_type = input_image_file_path.suffix.lower().lstrip('.') or 'jpg'
             file_size_bytes = input_image_file_path.stat().st_size
             file_hash = hashlib.sha256(input_image_file_path.read_bytes()).hexdigest()
-            file_encryption_status = 'No'
             image_details_nested_list.append(
-                (file_name, file_path, file_type, file_size_bytes, file_hash, file_encryption_status)
+                (file_name, file_path, file_type, file_size_bytes, file_hash)
             )
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Details-Insert', 'step': '5', 'message': str(error)}
@@ -57,8 +58,8 @@ def image_details_insert(database_folder_path: str, images_folder_path: str) -> 
         with sqlite3.connect(str(image_encryption_database_file_path)) as db_connection:
             db_cursor = db_connection.cursor()
             db_cursor.executemany('''
-                INSERT INTO raw_images_details (file_name, file_path, file_type, file_size_bytes, file_hash, file_encryption_status)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO raw_images_details (file_name, file_path, file_type, file_size_bytes, file_hash)
+                VALUES (?, ?, ?, ?, ?)
             ''', image_details_nested_list)
             db_connection.commit()
     except Exception as error:
