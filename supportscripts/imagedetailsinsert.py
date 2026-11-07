@@ -3,7 +3,7 @@ def image_details_insert(database_folder_path: str, images_folder_path: str) -> 
     # Define Constant
     image_details_nested_list = []
 
-    # Importing Python Modules:S13
+    # Importing Python Modules:S1
     try:
         from pathlib import Path
         import sqlite3
