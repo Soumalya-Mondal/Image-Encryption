@@ -84,7 +84,7 @@ if __name__ == '__main__':
 
         # Calling "image_convert" Function:S8
         try:
-            image_convert_backend_response = image_convert(images_folder_path = str(images_folder_path))
+            image_convert_backend_response = image_convert(database_folder_path = str(database_folder_path))
             if image_convert_backend_response['status'] == 'ERROR':
                 print(f'ERROR - [Main:S8] - {image_convert_backend_response["message"]}')
                 sys.exit(1)

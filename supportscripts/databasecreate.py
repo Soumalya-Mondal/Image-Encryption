@@ -38,7 +38,6 @@ def database_create(database_folder_path: str) -> dict[str, str]:
             db_cursor = db_connection.cursor()
             db_cursor.execute(raw_images_details_table_creation_query)
             db_connection.commit()
-            db_connection.close()
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Database-Create', 'step': '4', 'message': str(error)}
 
@@ -60,7 +59,6 @@ def database_create(database_folder_path: str) -> dict[str, str]:
             db_cursor.execute('PRAGMA foreign_keys = ON')
             db_cursor.execute(converted_images_details_table_creation_query)
             db_connection.commit()
-            db_connection.close()
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Database-Create', 'step': '5', 'message': str(error)}
 
@@ -81,7 +79,6 @@ def database_create(database_folder_path: str) -> dict[str, str]:
             db_cursor.execute('PRAGMA foreign_keys = ON')
             db_cursor.execute(encrypted_images_details_table_creation_query)
             db_connection.commit()
-            db_connection.close()
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Database-Create', 'step': '6', 'message': str(error)}
 

@@ -69,7 +69,6 @@ def image_details_insert(database_folder_path: str, images_folder_path: str) -> 
                 image_details_nested_list.append(
                     (file_id, file_name, file_path, file_type, file_size_bytes, file_hash)
                 )
-            db_connection.close()
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Details-Insert', 'step': '6', 'message': str(error)}
 
@@ -82,7 +81,6 @@ def image_details_insert(database_folder_path: str, images_folder_path: str) -> 
                 VALUES (?, ?, ?, ?, ?, ?)
             ''', image_details_nested_list)
             db_connection.commit()
-            db_connection.close()
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Details-Insert', 'step': '7', 'message': str(error)}
 
