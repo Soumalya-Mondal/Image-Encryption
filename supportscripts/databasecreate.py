@@ -26,7 +26,7 @@ def database_create(database_folder_path: str) -> dict[str, str]:
         raw_images_details_table_creation_query = '''
             CREATE TABLE IF NOT EXISTS raw_images_details (
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                file_id TEXT NOT NULL CHECK(LENGTH(file_id) = 6),
+                file_id TEXT NOT NULL UNIQUE CHECK(LENGTH(file_id) = 6),
                 file_name TEXT NOT NULL,
                 file_path TEXT NOT NULL,
                 file_type TEXT NOT NULL DEFAULT 'jpg' CHECK(file_type IN ('heic', 'jpg', 'jpeg', 'png')),
@@ -38,6 +38,7 @@ def database_create(database_folder_path: str) -> dict[str, str]:
             db_cursor = db_connection.cursor()
             db_cursor.execute(raw_images_details_table_creation_query)
             db_connection.commit()
+            db_connection.close()
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Database-Create', 'step': '4', 'message': str(error)}
 
@@ -50,13 +51,16 @@ def database_create(database_folder_path: str) -> dict[str, str]:
                 file_name TEXT NOT NULL,
                 file_type TEXT NOT NULL DEFAULT 'jpg' CHECK(file_type = 'jpg'),
                 file_size_bytes BIGINT NOT NULL,
-                file_hash TEXT NOT NULL
+                file_hash TEXT NOT NULL,
+                FOREIGN KEY (raw_file_id) REFERENCES raw_images_details(file_id)
             )
         '''
         with sqlite3.connect(str(image_encryption_database_file_path)) as db_connection:
             db_cursor = db_connection.cursor()
+            db_cursor.execute('PRAGMA foreign_keys = ON')
             db_cursor.execute(converted_images_details_table_creation_query)
             db_connection.commit()
+            db_connection.close()
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Database-Create', 'step': '5', 'message': str(error)}
 
@@ -68,13 +72,16 @@ def database_create(database_folder_path: str) -> dict[str, str]:
                 raw_file_id TEXT NOT NULL CHECK(LENGTH(raw_file_id) = 6),
                 file_name TEXT NOT NULL,
                 file_size_bytes BIGINT NOT NULL,
-                file_hash TEXT NOT NULL
+                file_hash TEXT NOT NULL,
+                FOREIGN KEY (raw_file_id) REFERENCES raw_images_details(file_id)
             )
         '''
         with sqlite3.connect(str(image_encryption_database_file_path)) as db_connection:
             db_cursor = db_connection.cursor()
+            db_cursor.execute('PRAGMA foreign_keys = ON')
             db_cursor.execute(encrypted_images_details_table_creation_query)
             db_connection.commit()
+            db_connection.close()
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Database-Create', 'step': '6', 'message': str(error)}
 

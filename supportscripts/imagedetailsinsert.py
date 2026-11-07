@@ -8,6 +8,8 @@ def image_details_insert(database_folder_path: str, images_folder_path: str) -> 
         from pathlib import Path
         import sqlite3
         import hashlib
+        import secrets
+        import string
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Details-Insert', 'step': '1', 'message': str(error)}
 
@@ -35,35 +37,54 @@ def image_details_insert(database_folder_path: str, images_folder_path: str) -> 
     except Exception as error:
         return {'status': 'ERROR', 'file_name': 'Image-Details-Insert', 'step': '4', 'message': str(error)}
 
-    # Fetch Image Details:S5
+    # Define Helper Function:S5
+    try:
+        def generate_unique_file_id(db_cursor):
+            while True:
+                file_id = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
+                existing_file_id_row = db_cursor.execute(
+                    'SELECT 1 FROM raw_images_details WHERE file_id = ?',
+                    (file_id,)
+                ).fetchone()
+                if existing_file_id_row is None:
+                    return file_id
+    except Exception as error:
+        return {'status': 'ERROR', 'file_name': 'Image-Details-Insert', 'step': '5', 'message': str(error)}
+
+    # Fetch Image Details:S6
     try:
         input_image_file_path_list = sorted(
             file_path for file_path in images_folder_path_object.iterdir()
             if file_path.is_file()
         )
-        for input_image_file_path in input_image_file_path_list:
-            file_name = input_image_file_path.name
-            file_path = str(input_image_file_path)
-            file_type = input_image_file_path.suffix.lower().lstrip('.') or 'jpg'
-            file_size_bytes = input_image_file_path.stat().st_size
-            file_hash = hashlib.sha256(input_image_file_path.read_bytes()).hexdigest()
-            image_details_nested_list.append(
-                (file_name, file_path, file_type, file_size_bytes, file_hash)
-            )
+        with sqlite3.connect(str(image_encryption_database_file_path)) as db_connection:
+            db_cursor = db_connection.cursor()
+            for input_image_file_path in input_image_file_path_list:
+                file_id = generate_unique_file_id(db_cursor)
+                file_name = input_image_file_path.name
+                file_path = str(input_image_file_path)
+                file_type = input_image_file_path.suffix.lower().lstrip('.') or 'jpg'
+                file_size_bytes = input_image_file_path.stat().st_size
+                file_hash = hashlib.sha256(input_image_file_path.read_bytes()).hexdigest()
+                image_details_nested_list.append(
+                    (file_id, file_name, file_path, file_type, file_size_bytes, file_hash)
+                )
+            db_connection.close()
     except Exception as error:
-        return {'status': 'ERROR', 'file_name': 'Image-Details-Insert', 'step': '5', 'message': str(error)}
+        return {'status': 'ERROR', 'file_name': 'Image-Details-Insert', 'step': '6', 'message': str(error)}
 
-    # Insert Image Details Into Database:S6
+    # Insert Image Details Into Database:S7
     try:
         with sqlite3.connect(str(image_encryption_database_file_path)) as db_connection:
             db_cursor = db_connection.cursor()
             db_cursor.executemany('''
-                INSERT INTO raw_images_details (file_name, file_path, file_type, file_size_bytes, file_hash)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO raw_images_details (file_id, file_name, file_path, file_type, file_size_bytes, file_hash)
+                VALUES (?, ?, ?, ?, ?, ?)
             ''', image_details_nested_list)
             db_connection.commit()
+            db_connection.close()
     except Exception as error:
-        return {'status': 'ERROR', 'file_name': 'Image-Details-Insert', 'step': '6', 'message': str(error)}
+        return {'status': 'ERROR', 'file_name': 'Image-Details-Insert', 'step': '7', 'message': str(error)}
 
-    # Return Success:S7
-    return {'status': 'SUCCESS', 'file_name': 'Image-Details-Insert', 'step': '7', 'message': 'Image Details Inserted Successfully'}
+    # Return Success:S8
+    return {'status': 'SUCCESS', 'file_name': 'Image-Details-Insert', 'step': '8', 'message': 'Image Details Inserted Successfully'}
